@@ -3,4 +3,4 @@ Password: CS224Ntfboys
 Public IP: 40.84.189.87
 SSH: ssh tfboys@40.84.189.87
 TensorBoard: http://40.84.189.87:5678
-Tmux session: baseline
+Tmux: tmux a -t baseline
