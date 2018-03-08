@@ -5,7 +5,7 @@ from tensorflow.python.ops import variable_scope as vs
 
 class RNetModel(QAModel):
     def build_graph(self):
-        # TODO write a GRU component
+        # TODO write a GRU component supporting deeper layers
         # Word embedding only TODO char embedding, go deeper
         with tf.variable_scope('encoding'):
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
