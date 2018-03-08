@@ -8,12 +8,13 @@ class RNetModel(QAModel):
     def build_graph(self):
         # Word embedding only TODO char embedding & go deeper
         with tf.variable_scope('Encoding'):
+            # 1 layer encoder
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
             context_hiddens = encoder.build_graph(self.context_embs,
                                                   self.context_mask)  # (batch_size, context_len, hidden_size*2)
             question_hiddens = encoder.build_graph(self.qn_embs,
                                                    self.qn_mask)  # (batch_size, question_len, hidden_size*2)
-
+            # deep encoder
             # encoder = DeepGRU(3, self.FLAGS.hidden_size, self.keep_prob)
             # context_hiddens = encoder.build_graph(self.context_embs, self.context_mask) # (batch_size, context_len, hidden_size*2)
             # question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask) # (batch_size, question_len, hidden_size*2)

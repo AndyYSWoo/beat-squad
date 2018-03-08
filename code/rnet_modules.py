@@ -92,14 +92,14 @@ class GatedDotAttn(object):
             output = tf.nn.dropout(output, self.keep_prob)
 
         # # Compute gate
-        # with tf.variable_scope('c2qgate'):
-        #     shape = tf.shape(output)
-        #     dim = output.get_shape().as_list()[-1]
-        #     flatten = tf.reshape(output, (-1, dim))
-        #     W = tf.get_variable('Wc2gate', (dim, dim))
-        #     gate = tf.matmul(flatten, W)
-        #     gate = tf.reshape(gate, shape)
-        #     gate = tf.nn.sigmoid(gate)
-        #     output = gate * output
+        with tf.variable_scope('c2qgate'):
+            shape = tf.shape(output)
+            dim = output.get_shape().as_list()[-1]
+            flatten = tf.reshape(output, (-1, dim))
+            W = tf.get_variable('Wc2gate', (dim, dim))
+            gate = tf.matmul(flatten, W)
+            gate = tf.reshape(gate, shape)
+            gate = tf.nn.sigmoid(gate)
+            output = gate * output
             return attn_dist, output
 
