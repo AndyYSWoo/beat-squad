@@ -1,25 +1,25 @@
-from qa_model import QAModel
-from modules import RNNEncoder, masked_softmax, BasicAttn, SimpleSoftmaxLayer
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
+from qa_model import QAModel
+from modules import *
+from rnet_modules import *
 
 class RNetModel(QAModel):
     def build_graph(self):
-        # TODO write a GRU component supporting deeper layers
-        # Word embedding only TODO char embedding, go deeper
-        with tf.variable_scope('encoding'):
-            encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
+        # Word embedding only TODO char embedding & go deeper
+        with tf.variable_scope('Encoding'):
+            encoder = DeepGRU(3, self.FLAGS.hidden_size, self.keep_prob)
             context_hiddens = encoder.build_graph(self.context_embs, self.context_mask) # (batch_size, context_len, hidden_size*2)
             question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask) # (batch_size, question_len, hidden_size*2)
 
         # Gated C2Q attention
-        with tf.variable_scope('C2Q'):
+        with tf.variable_scope('C2QAttention'):
             c2q_attn_layer = GatedDotAttn(self.keep_prob, self.FLAGS.hidden_size*2, self.FLAGS.hidden_size*2)
             _, c2q_attention = c2q_attn_layer.build_graph(question_hiddens, self.qn_mask, context_hiddens) # (batch_size, context_len, hidden_size*4)
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
             c2q_attention = encoder.build_graph(c2q_attention, self.context_mask) # (batch_size, context_len, hidden_size*2)
 
-        with tf.variable_scope('selfmatching'):
+        with tf.variable_scope('SelfMatching'):
             self_attn_layer = GatedDotAttn(self.keep_prob, self.FLAGS.hidden_size*2, self.FLAGS.hidden_size*2)
             _, self_attention = self_attn_layer.build_graph(c2q_attention, self.context_mask, c2q_attention) # (batch_size, context_len, hidden_size*4)
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
@@ -41,52 +41,3 @@ class RNetModel(QAModel):
         with vs.variable_scope("EndDist"):
             softmax_layer_end = SimpleSoftmaxLayer()
             self.logits_end, self.probdist_end = softmax_layer_end.build_graph(blended_reps_final, self.context_mask)
-
-class GatedDotAttn(BasicAttn):
-    def build_graph(self, values, values_mask, keys):
-        """
-        Keys attend to values.
-        For each key, return an attention distribution and an attention output vector.
-
-        Inputs:
-          values: Tensor shape (batch_size, num_values, value_vec_size).
-          values_mask: Tensor shape (batch_size, num_values).
-            1s where there's real input, 0s where there's padding
-          keys: Tensor shape (batch_size, num_keys, value_vec_size)
-
-        Outputs:
-          attn_dist: Tensor shape (batch_size, num_keys, num_values).
-            For each key, the distribution should sum to 1,
-            and should be 0 in the value locations that correspond to padding.
-          output: Tensor shape (batch_size, num_keys, hidden_size).
-            This is the attention output; the weighted sum of the values
-            (using the attention distribution as weights).
-        """
-        with vs.variable_scope("GatedDotAttn"):
-            # Calculate attention distribution
-            values_t = tf.transpose(values, perm=[0, 2, 1]) # (batch_size, value_vec_size, num_values)
-            attn_logits = tf.matmul(keys, values_t) # shape (batch_size, num_keys, num_values)
-            attn_logits_mask = tf.expand_dims(values_mask, 1) # shape (batch_size, 1, num_values)
-            _, attn_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
-
-            # Use attention distribution to take weighted sum of values
-            output = tf.matmul(attn_dist, values) # shape (batch_size, num_keys, value_vec_size)
-
-            # Apply dropout
-            output = tf.nn.dropout(output, self.keep_prob)
-
-            # Blend
-            output = tf.concat([keys, output], axis=2)
-
-        # Compute gate
-        with tf.variable_scope('c2qgate'):
-            shape = tf.shape(output)
-            dim = output.get_shape().as_list()[-1]
-            flatten = tf.reshape(output, (-1, dim))
-            W = tf.get_variable('Wc2gate', (dim, dim))
-            gate = tf.matmul(flatten, W)
-            gate = tf.reshape(gate, shape)
-            gate = tf.nn.sigmoid(gate)
-            output = gate * output
-            return attn_dist, output
-
