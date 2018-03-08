@@ -33,9 +33,7 @@ class RNetModel(QAModel):
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
             self_attention = encoder.build_graph(self_attention, self.context_mask) # (batch_size, context_len, hidden_size*2)
 
-        # Apply fully connected layer to each blended representation
-        # Note, blended_reps_final corresponds to b' in the handout
-        # Note, tf.contrib.layers.fully_connected applies a ReLU non-linarity here by default
+        # Trivial output layer for now, TODO use ptr net
         blended_reps_final = tf.contrib.layers.fully_connected(self_attention, num_outputs=self.FLAGS.hidden_size) # (batch_size, context_len, hidden_size*2)
 
         # Use softmax layer to compute probability distribution for start location
