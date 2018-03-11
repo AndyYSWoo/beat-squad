@@ -240,81 +240,81 @@ class MultiplicativeAttnWithParameterKey(object):
             return attn_dist, output
 
 
-class AdditiveAttention(object):
-    """Module for basic attention.
-
-    Note: in this module we use the terminology of "keys" and "values" (see lectures).
-    In the terminology of "X attends to Y", "keys attend to values".
-
-    In the baseline model, the keys are the context hidden states
-    and the values are the question hidden states.
-
-    We choose to use general terminology of keys and values in this module
-    (rather than context and question) to avoid confusion if you reuse this
-    module with other inputs.
-    """
-
-    def __init__(self, keep_prob, key_vec_size, value_vec_size, inner_size):
-        """
-        Inputs:
-          keep_prob: tensor containing a single scalar that is the keep probability (for dropout)
-          key_vec_size: size of the key vectors. int
-          value_vec_size: size of the value vectors. int
-          inner_size: d_3 in lecture 11 P.19
-        """
-        self.keep_prob = keep_prob
-        self.key_vec_size = key_vec_size
-        self.value_vec_size = value_vec_size
-        self.inner_size = inner_size
-
-    def build_graph(self, values, values_mask, keys):
-        """
-        Keys attend to values.
-        For each key, return an attention distribution and an attention output vector.
-
-        Inputs:
-          values: Tensor shape (batch_size, num_values, value_vec_size).
-          values_mask: Tensor shape (batch_size, num_values).
-            1s where there's real input, 0s where there's padding
-          keys: Tensor shape (batch_size, num_keys, value_vec_size)
-
-        Outputs:
-          attn_dist: Tensor shape (batch_size, num_keys, num_values).
-            For each key, the distribution should sum to 1,
-            and should be 0 in the value locations that correspond to padding.
-          output: Tensor shape (batch_size, num_keys, hidden_size).
-            This is the attention output; the weighted sum of the values
-            (using the attention distribution as weights).
-        """
-        with vs.variable_scope("AdditiveAttn"):
-            W_1 = tf.get_variable('W_1_{}'.format(values.name), shape=(self.value_vec_size, self.inner_size),
-                                  initializer=tf.contrib.layers.xavier_initializer())
-            W_2 = tf.get_variable('W_2_{}'.format(keys.name), shape=(self.key_vec_size, self.inner_size),
-                                  initializer=tf.contrib.layers.xavier_initializer())
-            v = tf.get_variable('v_{}_{}'.format(values.name, keys.name), shape=(self.inner_size, ),
-                                initializer=tf.contrib.layers.xavier_initializer())
-            weights = [W_1, W_2]
-            states = [values, keys]
-            outputs = []
-            for weight, state in zip(weights, states):
-                shape = state.get_shape().as_list()
-                output = tf.matmul(state, weight)
-                if len(shape) > 2:
-                    output = tf.reshape(output, (shape[0], shape[1], -1))
-                elif len(shape) == 2 and shape[0] is None: # TODO
-                    output = tf.reshape(output, (shape[0], 1, -1))
-                else:
-                    output = tf.reshape(output, (1, shape[0], -1))
-                outputs.append(output)
-            outputs = sum(outputs)
-            attn_logits = tf.reduce_sum(tf.tanh(outputs) * v, [-1])
-            attn_logits_mask = tf.expand_dims(values_mask, 1) # shape (batch_size, 1, num_values)
-            _, attn_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
-
-            # Use attention distribution to take weighted sum of values
-            output = tf.matmul(attn_dist, values) # shape (batch_size, num_keys, value_vec_size)
-
-            # Apply dropout
-            output = tf.nn.dropout(output, self.keep_prob)
-
-            return attn_dist, output
+# class AdditiveAttention(object):
+#     """Module for basic attention.
+#
+#     Note: in this module we use the terminology of "keys" and "values" (see lectures).
+#     In the terminology of "X attends to Y", "keys attend to values".
+#
+#     In the baseline model, the keys are the context hidden states
+#     and the values are the question hidden states.
+#
+#     We choose to use general terminology of keys and values in this module
+#     (rather than context and question) to avoid confusion if you reuse this
+#     module with other inputs.
+#     """
+#
+#     def __init__(self, keep_prob, key_vec_size, value_vec_size, inner_size):
+#         """
+#         Inputs:
+#           keep_prob: tensor containing a single scalar that is the keep probability (for dropout)
+#           key_vec_size: size of the key vectors. int
+#           value_vec_size: size of the value vectors. int
+#           inner_size: d_3 in lecture 11 P.19
+#         """
+#         self.keep_prob = keep_prob
+#         self.key_vec_size = key_vec_size
+#         self.value_vec_size = value_vec_size
+#         self.inner_size = inner_size
+#
+#     def build_graph(self, values, values_mask, keys):
+#         """
+#         Keys attend to values.
+#         For each key, return an attention distribution and an attention output vector.
+#
+#         Inputs:
+#           values: Tensor shape (batch_size, num_values, value_vec_size).
+#           values_mask: Tensor shape (batch_size, num_values).
+#             1s where there's real input, 0s where there's padding
+#           keys: Tensor shape (batch_size, num_keys, value_vec_size)
+#
+#         Outputs:
+#           attn_dist: Tensor shape (batch_size, num_keys, num_values).
+#             For each key, the distribution should sum to 1,
+#             and should be 0 in the value locations that correspond to padding.
+#           output: Tensor shape (batch_size, num_keys, hidden_size).
+#             This is the attention output; the weighted sum of the values
+#             (using the attention distribution as weights).
+#         """
+#         with vs.variable_scope("AdditiveAttn"):
+#             W_1 = tf.get_variable('W_1_{}'.format(values.name), shape=(self.value_vec_size, self.inner_size),
+#                                   initializer=tf.contrib.layers.xavier_initializer())
+#             W_2 = tf.get_variable('W_2_{}'.format(keys.name), shape=(self.key_vec_size, self.inner_size),
+#                                   initializer=tf.contrib.layers.xavier_initializer())
+#             v = tf.get_variable('v_{}_{}'.format(values.name, keys.name), shape=(self.inner_size, ),
+#                                 initializer=tf.contrib.layers.xavier_initializer())
+#             weights = [W_1, W_2]
+#             states = [values, keys]
+#             outputs = []
+#             for weight, state in zip(weights, states):
+#                 shape = state.get_shape().as_list()
+#                 output = tf.matmul(state, weight)
+#                 if len(shape) > 2:
+#                     output = tf.reshape(output, (shape[0], shape[1], -1))
+#                 elif len(shape) == 2 and shape[0] is None: # TODO
+#                     output = tf.reshape(output, (shape[0], 1, -1))
+#                 else:
+#                     output = tf.reshape(output, (1, shape[0], -1))
+#                 outputs.append(output)
+#             outputs = sum(outputs)
+#             attn_logits = tf.reduce_sum(tf.tanh(outputs) * v, [-1])
+#             attn_logits_mask = tf.expand_dims(values_mask, 1) # shape (batch_size, 1, num_values)
+#             _, attn_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
+#
+#             # Use attention distribution to take weighted sum of values
+#             output = tf.matmul(attn_dist, values) # shape (batch_size, num_keys, value_vec_size)
+#
+#             # Apply dropout
+#             output = tf.nn.dropout(output, self.keep_prob)
+#
+#             return attn_dist, output
