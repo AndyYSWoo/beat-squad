@@ -161,15 +161,15 @@ class MultiplicativeAttn(object):
             values_t = tf.transpose(values, perm=[0, 2, 1]) # (batch_size, value_vec_size, num_values)
             attn_logits = tf.matmul(attn_logits, values_t) # (batch_size, num_keys, num_values)
             attn_logits_mask = tf.expand_dims(values_mask, 1) # shape (batch_size, 1, num_values)
-            _, attn_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
+            attn_masked_logits, attn_prob_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
 
             # Use attention distribution to take weighted sum of values
-            output = tf.matmul(attn_dist, values) # shape (batch_size, num_keys, value_vec_size)
+            output = tf.matmul(attn_prob_dist, values) # shape (batch_size, num_keys, value_vec_size)
 
             # Apply dropout
             output = tf.nn.dropout(output, self.keep_prob)
 
-            return attn_dist, output
+            return attn_masked_logits, attn_prob_dist, output
 
 
 class MultiplicativeAttnWithParameterKey(object):
