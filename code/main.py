@@ -28,6 +28,7 @@ import tensorflow as tf
 from qa_model import QAModel
 from rnet_model import RNetModel
 from rnet_ptrnet_model import RNetPtrModel
+from baseline_ptrnet_model import BaselinePtrModel
 from vocab import get_glove
 from official_eval_helper import get_json_data, generate_answers
 
@@ -137,7 +138,8 @@ def main(unused_argv):
     # Initialize model
     # qa_model = QAModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = RNetModel(FLAGS, id2word, word2id, emb_matrix)
-    qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
+    # qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
+    qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
 
     # Some GPU settings
     config=tf.ConfigProto()
