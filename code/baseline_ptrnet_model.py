@@ -71,27 +71,49 @@ class BaselinePtrModel(QAModel):
                     self.probdist_end = end_layer_prob_dist
 
 
+    def get_start_end_pos(self, session, batch):
+        """
+        Run forward-pass only; get the most likely answer span.
 
+        Inputs:
+          session: TensorFlow session
+          batch: Batch object
 
+        Returns:
+          start_pos, end_pos: both numpy arrays shape (batch_size).
+            The most likely start and end positions for each example in the batch.
+        """
+        # Get start_dist and end_dist, both shape (batch_size, context_len)
+        start_dist, end_dist = self.get_prob_dists(session, batch)
 
+        # Use dynamic programming to find maximum start_dist * end_dist where start_dist <= end_dist
+        shape = start_dist.shape # (batch_size, context_len)
+        start_pos = np.zeros(shape[0])
+        end_pos = np.zeros(shape[0])
 
-        #
-        #
-        # # Apply fully connected layer to each blended representation
-        # # Note, blended_reps_final corresponds to b' in the handout
-        # # Note, tf.contrib.layers.fully_connected applies a ReLU non-linarity here by default
-        # blended_reps_final = tf.contrib.layers.fully_connected(blended_reps, num_outputs=self.FLAGS.hidden_size) # blended_reps_final is shape (batch_size, context_len, hidden_size)
-        #
-        # # Use softmax layer to compute probability distribution for start location
-        # # Note this produces self.logits_start and self.probdist_start, both of which have shape (batch_size, context_len)
-        # with vs.variable_scope("StartDist"):
-        #     softmax_layer_start = SimpleSoftmaxLayer()
-        #     self.logits_start, self.probdist_start = softmax_layer_start.build_graph(blended_reps_final, self.context_mask)
-        #
-        # # Use softmax layer to compute probability distribution for end location
-        # # Note this produces self.logits_end and self.probdist_end, both of which have shape (batch_size, context_len)
-        # with vs.variable_scope("EndDist"):
-        #     softmax_layer_end = SimpleSoftmaxLayer()
-        #     self.logits_end, self.probdist_end = softmax_layer_end.build_graph(blended_reps_final, self.context_mask)
+        for batch_index in range(shape[0]):
+            max_start_dist_index = np.zeros(shape[1])
+            max_start_dist_index[0] = 0
+            for start_dist_index in range(shape[1]):
+                if start_dist[batch_index][start_dist_index] > \
+                        start_dist[batch_index][int(max_start_dist_index[start_dist_index - 1])]:
+                    max_start_dist_index[start_dist_index] = start_dist_index
+                else:
+                    max_start_dist_index[start_dist_index] = max_start_dist_index[start_dist_index - 1]
 
+            for end_dist_index in range(shape[1]):
+                current_max_product = start_dist[batch_index][int(start_pos[batch_index])] \
+                                      * end_dist[batch_index][int(end_pos[batch_index])]
+                current_product = start_dist[batch_index][max_start_dist_index[end_dist_index]] \
+                                  * end_dist[batch_index][end_dist_index]
+                if current_max_product < current_product:
+                    start_pos[batch_index] = max_start_dist_index[end_dist_index]
+                    end_pos[batch_index] = end_dist_index
 
+            print batch_index, start_pos[batch_index], end_pos[batch_index]
+
+        # # Take argmax to get start_pos and end_post, both shape (batch_size)
+        # start_pos = np.argmax(start_dist, axis=1)
+        # end_pos = np.argmax(end_dist, axis=1)
+
+        return start_pos, end_pos
