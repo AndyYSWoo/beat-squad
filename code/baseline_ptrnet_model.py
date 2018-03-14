@@ -114,7 +114,7 @@ class BaselinePtrModel(QAModel):
             print batch_index, start_pos[batch_index], end_pos[batch_index]
 
         # # Take argmax to get start_pos and end_post, both shape (batch_size)
-        # start_pos = np.argmax(start_dist, axis=1)
-        # end_pos = np.argmax(end_dist, axis=1)
+        start_pos = np.argmax(start_dist, axis=1)
+        end_pos = np.argmax(end_dist, axis=1)
 
         return start_pos, end_pos
