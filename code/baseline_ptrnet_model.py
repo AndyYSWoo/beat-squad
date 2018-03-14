@@ -4,6 +4,7 @@ from qa_model import QAModel
 from modules import *
 from rnet_ptrnet_modules import *
 from tensorflow.python.ops import rnn_cell
+import numpy as np
 
 class BaselinePtrModel(QAModel):
     def build_graph(self):
@@ -88,22 +89,22 @@ class BaselinePtrModel(QAModel):
 
         # Use dynamic programming to find maximum start_dist * end_dist where start_dist <= end_dist
         shape = start_dist.shape # (batch_size, context_len)
-        start_pos = np.zeros(shape[0])
-        end_pos = np.zeros(shape[0])
+        start_pos = np.zeros(shape[0], dtype=np.int64)
+        end_pos = np.zeros(shape[0], dtype=np.int64)
 
         for batch_index in range(shape[0]):
-            max_start_dist_index = np.zeros(shape[1])
+            max_start_dist_index = np.zeros(shape[1], dtype=np.int64)
             max_start_dist_index[0] = 0
             for start_dist_index in range(shape[1]):
                 if start_dist[batch_index][start_dist_index] > \
-                        start_dist[batch_index][int(max_start_dist_index[start_dist_index - 1])]:
+                        start_dist[batch_index][max_start_dist_index[start_dist_index - 1]]:
                     max_start_dist_index[start_dist_index] = start_dist_index
                 else:
                     max_start_dist_index[start_dist_index] = max_start_dist_index[start_dist_index - 1]
 
             for end_dist_index in range(shape[1]):
-                current_max_product = start_dist[batch_index][int(start_pos[batch_index])] \
-                                      * end_dist[batch_index][int(end_pos[batch_index])]
+                current_max_product = start_dist[batch_index][start_pos[batch_index]] \
+                                      * end_dist[batch_index][end_pos[batch_index]]
                 current_product = start_dist[batch_index][max_start_dist_index[end_dist_index]] \
                                   * end_dist[batch_index][end_dist_index]
                 if current_max_product < current_product:
