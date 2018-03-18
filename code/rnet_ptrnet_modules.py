@@ -104,6 +104,9 @@ class GatedDotAttn(object):
             return attn_dist, output
 
     def build_mult_graph(self, values, values_mask, keys, FLAGS):
+        values = tf.nn.dropout(values, self.keep_prob)
+        keys = tf.nn.dropout(keys, self.keep_prob)
+
         with vs.variable_scope("GatedDotAttn"):
             # Calculate attention distribution
             values_ = tf.nn.relu(dense(values, FLAGS.hidden_size, 'values'))

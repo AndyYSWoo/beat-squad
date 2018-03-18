@@ -11,6 +11,9 @@ class FullModel(CharModel):
         # Encoding input
         with tf.variable_scope('Encoding'):
             # encode chars
+            self.context_char_embs = tf.nn.dropout(self.context_char_embs, self.keep_prob)
+            self.qn_char_embs = tf.nn.dropout(self.qn_char_embs, self.keep_prob)
+
             context_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.context_char_ids, tf.bool), tf.int32), axis=2), [-1])
             qn_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.qn_char_ids, tf.bool), tf.int32), axis=2), [-1])
             cell_fw = rnn_cell.GRUCell(self.FLAGS.char_hidden_size)
