@@ -29,6 +29,7 @@ from qa_model import QAModel
 from rnet_model import RNetModel
 from rnet_ptrnet_model import RNetPtrModel
 from baseline_ptrnet_model import BaselinePtrModel
+from char_model import CharModel
 from vocab import get_glove
 from official_eval_helper import get_json_data, generate_answers
 
@@ -70,6 +71,10 @@ tf.app.flags.DEFINE_string("ckpt_load_dir", "", "For official_eval mode, which d
 tf.app.flags.DEFINE_string("json_in_path", "", "For official_eval mode, path to JSON input file. You need to specify this for official_eval_mode.")
 tf.app.flags.DEFINE_string("json_out_path", "predictions.json", "Output path for official_eval mode. Defaults to predictions.json")
 
+# Char embedding
+tf.app.flags.DEFINE_integer("char_embedding_size", 300, "Size of pretrained char vectors.")
+tf.app.flags.DEFINE_string("glove_char_path", os.path.join(DEFAULT_DATA_DIR, 'glove.840B.300d-char.txt'), "Path to glove char .txt file.")
+tf.app.flags.DEFINE_integer("char_limit", 16, "Limit length for character")
 
 FLAGS = tf.app.flags.FLAGS
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
@@ -139,7 +144,8 @@ def main(unused_argv):
     # qa_model = QAModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = RNetModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
-    qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
+    # qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
+    qa_model = CharModel(FLAGS, id2word, word2id, emb_matrix)
 
     # Some GPU settings
     config=tf.ConfigProto()
