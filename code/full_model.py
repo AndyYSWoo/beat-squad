@@ -13,8 +13,8 @@ class FullModel(CharModel):
             # encode chars
             context_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.context_char_ids, tf.bool), tf.int32), axis=2), [-1])
             qn_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.qn_char_ids, tf.bool), tf.int32), axis=2), [-1])
-            cell_fw = rnn_cell.GRUCell(self.FLAGS.hidden_size)
-            cell_bw = rnn_cell.GRUCell(self.FLAGS.hidden_size)
+            cell_fw = rnn_cell.GRUCell(self.FLAGS.char_hidden_size)
+            cell_bw = rnn_cell.GRUCell(self.FLAGS.char_hidden_size)
             _, (state_fw, state_bw) = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw, cell_bw, self.context_char_embs, context_input_lens, dtype=tf.float32)
             ch_emb = tf.reshape(tf.concat([state_fw, state_bw], axis=1), [-1, self.FLAGS.context_len, 2 * self.FLAGS.hidden_size])

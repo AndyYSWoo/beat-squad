@@ -75,6 +75,7 @@ tf.app.flags.DEFINE_string("json_out_path", "predictions.json", "Output path for
 tf.app.flags.DEFINE_integer("char_embedding_size", 300, "Size of pretrained char vectors.")
 tf.app.flags.DEFINE_string("glove_char_path", os.path.join(DEFAULT_DATA_DIR, 'glove.840B.300d-char.txt'), "Path to glove char .txt file.")
 tf.app.flags.DEFINE_integer("char_limit", 16, "Limit length for character")
+tf.app.flags.DEFINE_integer("char_hidden_size", 100, "GRU dimention for char")
 
 FLAGS = tf.app.flags.FLAGS
 os.environ["CUDA_VISIBLE_DEVICES"] = str(FLAGS.gpu)
