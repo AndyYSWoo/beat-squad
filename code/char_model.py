@@ -125,6 +125,7 @@ class CharModel(QAModel):
             cell_fw, cell_bw, self.context_char_embs, context_input_lens, dtype=tf.float32)
         ch_emb = tf.reshape(tf.concat([state_fw, state_bw], axis=1), [-1, self.FLAGS.context_len, 2 * self.FLAGS.hidden_size])
         self.context_embs = tf.concat([self.context_embs, ch_emb], axis=2)
+
         _, (state_fw, state_bw) = tf.nn.bidirectional_dynamic_rnn(
             cell_fw, cell_bw, self.qn_char_embs, qn_input_lens, dtype=tf.float32)
         qh_emb = tf.reshape(tf.concat([state_fw, state_bw], axis=1), [-1, self.FLAGS.question_len, 2 * self.FLAGS.hidden_size])
