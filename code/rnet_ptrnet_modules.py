@@ -91,7 +91,7 @@ class GatedDotAttn(object):
             # Apply dropout
             output = tf.nn.dropout(output, self.keep_prob)
 
-        # # Compute gate
+        # Compute gate
         with tf.variable_scope('c2qgate'):
             shape = tf.shape(output)
             dim = output.get_shape().as_list()[-1]
@@ -102,6 +102,48 @@ class GatedDotAttn(object):
             gate = tf.nn.sigmoid(gate)
             output = gate * output
             return attn_dist, output
+
+    def build_mult_graph(self, values, values_mask, keys, FLAGS):
+        with vs.variable_scope("GatedDotAttn"):
+            # Calculate attention distribution
+            values_ = tf.nn.relu(dense(values, FLAGS.hidden_size, 'values'))
+            values_t = tf.transpose(values_, perm=[0, 2, 1]) # (batch_size, value_vec_size, num_values)
+            keys_ = tf.nn.relu(dense(keys, FLAGS.hidden_size, 'keys'))
+            attn_logits = tf.matmul(keys_, values_t) / (FLAGS.hidden_size ** 0.5) # shape (batch_size, num_keys, num_values)
+            attn_logits_mask = tf.expand_dims(values_mask, 1) # shape (batch_size, 1, num_values)
+            _, attn_dist = masked_softmax(attn_logits, attn_logits_mask, 2) # shape (batch_size, num_keys, num_values). take softmax over values
+
+            # Use attention distribution to take weighted sum of values
+            output = tf.matmul(attn_dist, values) # shape (batch_size, num_keys, value_vec_size)
+
+            # Blend
+            output = tf.concat([keys, output], axis=2)
+
+            # Apply dropout
+            output = tf.nn.dropout(output, self.keep_prob)
+
+        # Compute gate
+        with tf.variable_scope('c2qgate'):
+            shape = tf.shape(output)
+            dim = output.get_shape().as_list()[-1]
+            flatten = tf.reshape(output, (-1, dim))
+            W = tf.get_variable('Wc2gate', (dim, dim))
+            gate = tf.matmul(flatten, W)
+            gate = tf.reshape(gate, shape)
+            gate = tf.nn.sigmoid(gate)
+            output = gate * output
+            return attn_dist, output
+
+def dense(inputs, hidden_size, scope='dense'):
+    with tf.variable_scope(scope):
+        shape = tf.shape(inputs)
+        dim = inputs.get_shape().as_list()[-1]
+        out_shape = [shape[idx] for idx in range(len(inputs.get_shape().as_list())-1)] + [hidden_size]
+        flat_inputs = tf.reshape(inputs, [-1, dim])
+        W = tf.get_variable('W', [dim, hidden_size])
+        res = tf.matmul(flat_inputs, W)
+        res = tf.reshape(res, out_shape)
+        return res
 
 
 class MultiplicativeAttn(object):
