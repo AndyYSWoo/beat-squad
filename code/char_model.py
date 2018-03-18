@@ -117,8 +117,8 @@ class CharModel(QAModel):
         # Use a RNN to get hidden states for the context and the question
         # Note: here the RNNEncoder is shared (i.e. the weights are the same)
         # between the context and the question.
-        context_input_lens = tf.reduce_sum(self.context_mask, reduction_indices=1)
-        qn_input_lens = tf.reduce_sum(self.qn_mask, reduction_indices=1)
+        context_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.context_char_ids, tf.bool), tf.int32), axis=2), [-1])
+        qn_input_lens = tf.reshape(tf.reduce_sum(tf.cast(tf.cast(self.qn_char_ids, tf.bool), tf.int32), axis=2), [-1])
         cell_fw = rnn_cell.GRUCell(self.FLAGS.hidden_size)
         cell_bw = rnn_cell.GRUCell(self.FLAGS.hidden_size)
         _, (state_fw, state_bw) = tf.nn.bidirectional_dynamic_rnn(
