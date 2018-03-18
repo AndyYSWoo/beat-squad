@@ -8,6 +8,7 @@ import os
 import sys
 from tqdm import tqdm
 
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
