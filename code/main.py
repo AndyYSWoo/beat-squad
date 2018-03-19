@@ -145,10 +145,10 @@ def main(unused_argv):
     # Initialize model
     # qa_model = QAModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = RNetModel(FLAGS, id2word, word2id, emb_matrix)
-    # qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
+    qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
     # qa_model = CharModel(FLAGS, id2word, word2id, emb_matrix)
-    qa_model = FullModel(FLAGS, id2word, word2id, emb_matrix)
+    # qa_model = FullModel(FLAGS, id2word, word2id, emb_matrix)
 
     # Some GPU settings
     config=tf.ConfigProto()
