@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 from qa_model import QAModel
@@ -7,32 +6,30 @@ from rnet_ptrnet_modules import *
 from tensorflow.python.ops import rnn_cell
 import numpy as np
 
-class RNetPtrModel(QAModel):
+class RNetPtrDeepModel(QAModel):
     def build_graph(self):
         # Word embedding only TODO char embedding & go deeper
         with tf.variable_scope('Encoding'):
             # 1 layer encoder
-            encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
-            context_hiddens = encoder.build_graph(self.context_embs, self.context_mask)  # (batch_size, context_len, hidden_size*2)
-            question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask)  # (batch_size, question_len, hidden_size*2)
+            # encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
+            # context_hiddens = encoder.build_graph(self.context_embs, self.context_mask)  # (batch_size, context_len, hidden_size*2)
+            # question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask)  # (batch_size, question_len, hidden_size*2)
             # deep encoder
-            # encoder = DeepGRU(3, self.FLAGS.hidden_size, self.keep_prob)
-            # context_hiddens = encoder.build_graph(self.context_embs, self.context_mask) # (batch_size, context_len, hidden_size*2)
-            # question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask) # (batch_size, question_len, hidden_size*2)
+            encoder = DeepGRU(3, self.FLAGS.hidden_size, self.keep_prob)
+            context_hiddens = encoder.build_graph(self.context_embs, self.context_mask) # (batch_size, context_len, hidden_size*2)
+            question_hiddens = encoder.build_graph(self.qn_embs, self.qn_mask) # (batch_size, question_len, hidden_size*2)
 
         # Gated C2Q attention
         with tf.variable_scope('C2QAttention'):
             c2q_attn_layer = GatedDotAttn(self.keep_prob, self.FLAGS.hidden_size*2, self.FLAGS.hidden_size*2)
-            # _, c2q_attention = c2q_attn_layer.build_graph(question_hiddens, self.qn_mask, context_hiddens) # (batch_size, context_len, hidden_size*4)
-            _, c2q_attention = c2q_attn_layer.build_mult_graph(question_hiddens, self.qn_mask, context_hiddens, self.FLAGS) # (batch_size, context_len, hidden_size*4)
+            _, c2q_attention = c2q_attn_layer.build_graph(question_hiddens, self.qn_mask, context_hiddens) # (batch_size, context_len, hidden_size*4)
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
             c2q_attention = encoder.build_graph(c2q_attention, self.context_mask) # (batch_size, context_len, hidden_size*2)
 
         # Self attention
         with tf.variable_scope('SelfMatching'):
             self_attn_layer = GatedDotAttn(self.keep_prob, self.FLAGS.hidden_size*2, self.FLAGS.hidden_size*2)
-            # _, self_attention = self_attn_layer.build_graph(c2q_attention, self.context_mask, c2q_attention) # (batch_size, context_len, hidden_size*4)
-            _, self_attention = self_attn_layer.build_mult_graph(c2q_attention, self.context_mask, c2q_attention, self.FLAGS) # (batch_size, context_len, hidden_size*4)
+            _, self_attention = self_attn_layer.build_graph(c2q_attention, self.context_mask, c2q_attention) # (batch_size, context_len, hidden_size*4)
             encoder = RNNEncoder(self.FLAGS.hidden_size, self.keep_prob)
             self_attention = encoder.build_graph(self_attention, self.context_mask) # (batch_size, context_len, hidden_size*2)
 
@@ -81,55 +78,6 @@ class RNetPtrModel(QAModel):
         # with vs.variable_scope("EndDist"):
         #     softmax_layer_end = SimpleSoftmaxLayer()
         #     self.logits_end, self.probdist_end = softmax_layer_end.build_graph(blended_reps_final, self.context_mask)
-    def get_start_end_pos(self, session, batch):
-        """
-        Run forward-pass only; get the most likely answer span.
-
-        Inputs:
-          session: TensorFlow session
-          batch: Batch object
-
-        Returns:
-          start_pos, end_pos: both numpy arrays shape (batch_size).
-            The most likely start and end positions for each example in the batch.
-        """
-        # Get start_dist and end_dist, both shape (batch_size, context_len)
-        start_dist, end_dist = self.get_prob_dists(session, batch)
-
-        # Use dynamic programming to find maximum start_dist * end_dist where start_dist <= end_dist
-        shape = start_dist.shape  # (batch_size, context_len)
-        start_pos = np.zeros(shape[0], dtype=np.int64)
-        end_pos = np.zeros(shape[0], dtype=np.int64)
-
-        # # Take argmax to get start_pos and end_post, both shape (batch_size)
-        # start_pos_old = np.argmax(start_dist, axis=1)
-        # end_pos_old = np.argmax(end_dist, axis=1)
-
-        for batch_index in range(shape[0]):
-            max_start_dist_index = np.zeros(shape[1], dtype=np.int64)
-            max_start_dist_index[0] = 0
-            for start_dist_index in range(1, shape[1]):
-                if start_dist[batch_index][start_dist_index] > \
-                        start_dist[batch_index][max_start_dist_index[start_dist_index - 1]]:
-                    max_start_dist_index[start_dist_index] = start_dist_index
-                else:
-                    max_start_dist_index[start_dist_index] = max_start_dist_index[start_dist_index - 1]
-
-            for end_dist_index in range(shape[1]):
-                current_max_product = start_dist[batch_index][start_pos[batch_index]] \
-                                      * end_dist[batch_index][end_pos[batch_index]]
-                current_product = start_dist[batch_index][max_start_dist_index[end_dist_index]] \
-                                  * end_dist[batch_index][end_dist_index]
-                if current_max_product < current_product:
-                    start_pos[batch_index] = max_start_dist_index[end_dist_index]
-                    end_pos[batch_index] = end_dist_index
-
-                    # print batch_index, start_pos[batch_index], end_pos[batch_index], \
-                    #     start_dist[batch_index][start_pos[batch_index]] * end_dist[batch_index][end_pos[batch_index]], \
-                    #     start_pos_old[batch_index], end_pos_old[batch_index], \
-                    #     start_dist[batch_index][start_pos_old[batch_index]] * end_dist[batch_index][end_pos_old[batch_index]]
-
-        return start_pos, end_pos
 
 
     def get_start_end_pos(self, session, batch):
