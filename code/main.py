@@ -80,6 +80,9 @@ tf.app.flags.DEFINE_integer("char_embedding_size", 300, "Size of pretrained char
 tf.app.flags.DEFINE_string("glove_char_path", os.path.join(DEFAULT_DATA_DIR, 'glove.840B.300d-char.txt'), "Path to glove char .txt file.")
 tf.app.flags.DEFINE_integer("char_limit", 16, "Limit length for character")
 tf.app.flags.DEFINE_integer("char_hidden_size", 100, "GRU dimention for char")
+
+# For ensemble
+tf.app.flags.DEFINE_integer("seed", -1, "Random seed for different models")
 tf.app.flags.DEFINE_string("class_name", "", "Model class name.")
 
 
@@ -114,6 +117,10 @@ def initialize_model(session, model, train_dir, expect_exists):
 
 
 def main(unused_argv):
+    # If random seed assigned, set it
+    if FLAGS.seed != -1:
+        tf.set_random_seed(FLAGS.seed)
+
     # Print an error message if you've entered flags incorrectly
     if len(unused_argv) != 1:
         raise Exception("There is a problem with how you entered flags: %s" % unused_argv)
@@ -151,8 +158,8 @@ def main(unused_argv):
     if FLAGS.class_name == "":
         # qa_model = QAModel(FLAGS, id2word, word2id, emb_matrix)
         # qa_model = RNetModel(FLAGS, id2word, word2id, emb_matrix)
-        # qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
-        qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
+        qa_model = RNetPtrModel(FLAGS, id2word, word2id, emb_matrix)
+        # qa_model = BaselinePtrModel(FLAGS, id2word, word2id, emb_matrix)
     else:
         qa_model = eval(FLAGS.class_name + '(FLAGS, id2word, word2id, emb_matrix)')
 
