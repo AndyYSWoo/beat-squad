@@ -45,13 +45,16 @@ FLAGS = tf.app.flags.FLAGS
 #
 # Local:
 # python code/main_ensemble.py \
-# --json_in_path=data/tiny-dev.json \
+# --json_in_path=data/dev-v1.1.json \
 # --ensemble_dir=experiments \
 # --ensemble_folder_names=fulldp,deepencoder \
 # --ensemble_class_names=RNetPtrModel,RNetPtrDeepModel \
 # --hidden_size_list=200,200 \
 # --context_len_list=450,450 \
 # --embedding_size_list=300,300
+#
+# Then:
+# python code/evaluate.py data/dev-v1.1.json predictions.json
 #
 # Codalab:
 # cl run --name gen-answers --request-docker-image abisee/cs224n-dfp:v4 :code :experiments glove.txt:0x97c870/glove.6B.300d.txt data.json:0x4870af 'python main_ensemble.py --mode=official_eval --glove_path=glove.txt --json_in_path=data.json --ensemble_dir=experiments --ensemble_folder_names=fulldp,deepencoder --ensemble_class_names=RNetPtrModel,RNetPtrDeepModel --hidden_size=200,200 --context_len=450,450 --embedding_size=300,300 ' --request-memory 6g
