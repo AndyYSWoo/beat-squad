@@ -28,7 +28,6 @@ import tensorflow as tf
 from qa_model import QAModel
 from rnet_model import RNetModel
 from rnet_ptrnet_model import RNetPtrModel
-from rnet_ptrnet_deep_model import RNetPtrDeepModel
 from baseline_ptrnet_model import BaselinePtrModel
 from char_model import CharModel
 from full_model import FullModel
