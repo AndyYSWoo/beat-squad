@@ -1,0 +1,20 @@
+fulldp-fulldp-predictions.json
+{"f1": 72.96640893710318, "exact_match": 62.081362346263006}
+fulldp-fulldp1-predictions.json
+{"f1": 73.12648705827864, "exact_match": 61.82592242194891}
+fulldp-fulldp2-predictions.json
+{"f1": 74.81473877262714, "exact_match": 64.21948912015137}
+fulldp-fulldp3-predictions.json
+{"f1": 75.58649252709682, "exact_match": 65.37369914853359}
+fulldp-fulldp4-predictions.json
+{"f1": 76.44545914117603, "exact_match": 66.20624408703878}
+fulldp-fulldp5-predictions.json
+{"f1": 76.64764964975421, "exact_match": 66.5279091769158}
+fulldp-fulldp6-predictions.json
+{"f1": 76.72607753799942, "exact_match": 66.6414380321665}
+fulldp-fulldp7-predictions.json
+{"f1": 76.78091883637731, "exact_match": 66.51844843897824}
+fulldp-fulldp8-predictions.json
+{"f1": 77.0065973878619, "exact_match": 66.81173131504258}
+fulldp-fulldp9-predictions.json
+{"f1": 76.98022042041109, "exact_match": 66.77388836329234}
